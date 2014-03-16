@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -c -Wall -std=c99
+CFLAGS = -c -Wall -std=c99 -ggdb
 LDFLAGS =
 SOURCES = Varion.c moves.c bitboard.c
 OBJECTS = $(SOURCES:.c=.o)

@@ -8,16 +8,19 @@ int main(void)
 
     setup();
     print_board();
+
+    /* TODO: Add who will go first. (goto ai_first if ai == first) */
+
     while(!game_over)
     {
         get_move();
 
-        if(game_over = check_game_over())
+        if((game_over = check_game_over()))
         {
             continue;
         }
 
-ai_first:
+//ai_first:
 
         make_move();
 
@@ -33,20 +36,20 @@ void setup(void)
 {
     /* Every two hex corresponds to a row.*/
     /*         ROW =   0 1 2 3 4 5 6 7    */
-    pawn_board     = 0x0000700000700000;
-    knight_board   = 0x0000880000880000;
-    l_rook_board   = 0x0800000000000008;
-    r_rook_board   = 0x8000000000000080;
-    king_board     = 0x2000000000000020;
-    enemy_board    = 0x0000000000F800A8; //ENDED HERE
+    boards[PAWN_BOARD]     = 0x0000700000700000;
+    boards[KNIGHT_BOARD]   = 0x0000880000880000;
+    boards[L_ROOK_BOARD]   = 0x0800000000000008;
+    boards[R_ROOK_BOARD]   = 0x8000000000000080;
+    boards[KING_BOARD]     = 0x2000000000000020;
+    boards[ENEMY_BOARD]    = 0x0000000000F800A8; //ENDED HERE
 }
 
 
 /* Print current board state */
 void print_board(void)
 {
-    bitboard full_board = pawn_board | knight_board | l_rook_board |
-                          r_rook_board | king_board; 
+    bitboard full_board = boards[PAWN_BOARD] | boards[KNIGHT_BOARD] | boards[L_ROOK_BOARD] |
+                          boards[R_ROOK_BOARD] | boards[KING_BOARD];
 
     for(int i = 0; i < GAME_BOARD_HEIGHT; i++)
     {
@@ -59,23 +62,24 @@ void print_board(void)
             {
                 printf(" ");
 
-                if(BITBOARD_HAS_PIECE(enemy_board, j, i))
-                { printf("\x1b[32m"); }
+                if(BITBOARD_HAS_PIECE(boards[ENEMY_BOARD], j, i))
+                { printf(ANSI_ESCAPE_RED); }
                 else
-                { printf("\x1b[31m"); }
+                { printf(ANSI_ESCAPE_GREEN); }
 
-                if(BITBOARD_HAS_PIECE(pawn_board, j, i))
+                if(BITBOARD_HAS_PIECE(boards[PAWN_BOARD], j, i))
                 { printf("P"); } 
-                else if(BITBOARD_HAS_PIECE(knight_board, j, i))
+                else if(BITBOARD_HAS_PIECE(boards[KNIGHT_BOARD], j, i))
                 { printf("N"); } 
-                else if(BITBOARD_HAS_PIECE(l_rook_board, j, i))
+                else if(BITBOARD_HAS_PIECE(boards[L_ROOK_BOARD], j, i))
                 { printf("L"); } 
-                else if(BITBOARD_HAS_PIECE(r_rook_board, j, i))
+                else if(BITBOARD_HAS_PIECE(boards[R_ROOK_BOARD], j, i))
                 { printf("R"); } 
                 else
                 { printf("K"); }
 
-                printf("\x1b[37m ");
+                printf(ANSI_ESCAPE_WHITE);
+                printf(" ");
             }
             else
             {
@@ -94,7 +98,6 @@ void print_board(void)
 void get_move(void)
 {
     uint8_t move_len;
-    char move_not_inputted = 1; /* Used as a boolean */
     char move_str[5]; /* I will make sure that this does not overflow */
     move_t move_arr[MAX_MOVES], input_move;
 
@@ -129,7 +132,8 @@ enter_move:
     {
         if(MOVE_EQUAL(input_move, move_arr[i]))
         {
-            move_perform(input_move);
+            move_perform(&input_move);
+            print_board();
             return;
         }
     }
@@ -148,7 +152,8 @@ void make_move(void)
 /* Check for a game-over state */
 unsigned char check_game_over(void)
 {
-    return 1; // Sets game-over. Will be implemented later.
+    return ((boards[KING_BOARD] & boards[ENEMY_BOARD]) == 0) ||
+           ((boards[KING_BOARD] & ~(boards[ENEMY_BOARD])) == 0);
 }
 
 
@@ -156,33 +161,30 @@ unsigned char check_game_over(void)
 uint8_t get_enemy_legal_moves(move_t *move_arr) /* Depth tells us where to put the moves list */
 {
     uint8_t counter = 0;
-    bitboard full_board = pawn_board | knight_board | l_rook_board |
-                          r_rook_board | king_board;
+    bitboard full_board = boards[PAWN_BOARD] | boards[KNIGHT_BOARD] | boards[L_ROOK_BOARD] |
+                          boards[R_ROOK_BOARD] | boards[KING_BOARD];
 
     for(uint8_t i = 0; i < GAME_BOARD_HEIGHT; i++)
     {
         for(uint8_t j = 0; j < GAME_BOARD_WIDTH; j++)
         {
-            if(BITBOARD_HAS_PIECE(enemy_board, j, i))
+            if(BITBOARD_HAS_PIECE(boards[ENEMY_BOARD], j, i))
             {
-               if(BITBOARD_HAS_PIECE(pawn_board, j, i))
+               if(BITBOARD_HAS_PIECE(boards[PAWN_BOARD], j, i))
                {
-                  if(i > 0 && j < 4 && BITBOARD_HAS_PIECE(full_board ^ enemy_board, j+1, i-1))
+                  if(i > 0 && j < 4 && BITBOARD_HAS_PIECE(full_board ^ boards[ENEMY_BOARD], j+1, i-1))
                   {
-                      printf("Found an upright move: %d, %d\n", j, i);
-                      move_t new_move = {j, i, j+1, i-1};
+                      move_t new_move = {{j, i, j+1, i-1}};
                       move_arr[counter++] = new_move;
                   }
-                  if(i > 0 && j > 0 && BITBOARD_HAS_PIECE(full_board ^ enemy_board, j-1, i-1))
+                  if(i > 0 && j > 0 && BITBOARD_HAS_PIECE(full_board ^ boards[ENEMY_BOARD], j-1, i-1))
                   {
-                      printf("Found an upleft move: %d, %d\n", j, i);
-                      move_t new_move = {j, i, j-1, i-1};
+                      move_t new_move = {{j, i, j-1, i-1}};
                       move_arr[counter++] = new_move;
                   }
                   if(i > 0 && !BITBOARD_HAS_PIECE(full_board, j, i-1))
                   {
-                      printf("Found an up move: %d, %d\n", j, i);
-                      move_t new_move = {j, i, j, i-1};
+                      move_t new_move = {{j, i, j, i-1}};
                       move_arr[counter++] = new_move;
                   }
                }
