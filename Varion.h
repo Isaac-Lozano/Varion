@@ -1,9 +1,9 @@
 #ifndef __VARION_H__
 #define __VARION_H__
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include "moves.h"
+#include "bitboard.h"
 
 
 /* Defines */
@@ -16,20 +16,11 @@
 
 #define ANSI_ESCAPE "\x1b"
 
-/* Macros */
-
-#define BITBOARD_HAS_PIECE(a, x, y) ((a >> (63 - 8*y - x)) & 1)
-
-
-/* Data Structures */
-
-typedef uint64_t bitboard;
-
 
 /* Global Variables */
 
 bitboard pawn_board, knight_board, l_rook_board, r_rook_board, king_board, enemy_board;
-uint8_t legal_moves[MAX_DEPTH][MAX_MOVES];
+move_t legal_moves[MAX_DEPTH][MAX_MOVES];
 int legal_moves_length[MAX_DEPTH]; /* How many legal moves in each row */
 
 
@@ -40,5 +31,6 @@ void print_board(void);
 void get_move(void);
 unsigned char check_game_over(void);
 void make_move(void);
+uint8_t get_enemy_legal_moves(move_t *move_arr);
 
 #endif /* defined __VARION_H__ */
