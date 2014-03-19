@@ -1,0 +1,20 @@
+Add bitboard functions:
+    Bitscan (returns index of bit)
+    Attack masks for move gen
+
+    switch(board_type)
+    {
+        case Pawn:
+            Generate pawn_attack_mask
+        case Rook:
+            Generate rook_attack_mask
+        case etc:
+            Generate etc_attack_mask
+    }
+
+    and with enemy pieces and iterate through results
+    use bit-scanning to determine index and make move_t
+
+Change move struct:
+    One uint8_t for index, rather than two for rank and file
+    Edit functions accordingly

@@ -17,18 +17,42 @@ void move_print_arr(move_t *move_arr, uint8_t move_len)
 
 void move_perform(move_t *input_move) /* TODO: Optimize */
 {
-    (*input_move).cap_flags = 0;
-    for(uint8_t j = 0; j < BITBOARD_TOTAL; j++)
+    input_move->cap_flags = 0;
+    for(uint8_t i = 0; i < BITBOARD_TOTAL; i++)
     {
-        BITBOARD_UNSET_BIT(boards[j], (*input_move).x[2], (*input_move).x[3]);
+        uint8_t has_piece = BITBOARD_HAS_PIECE(boards[i], input_move->x[2], input_move->x[3]);
+        input_move->cap_flags = input_move->cap_flags | (has_piece << i);
+        input_move->cap_flags = input_move->cap_flags | (has_piece << 6);
+        BITBOARD_UNSET_BIT(boards[i], input_move->x[2], input_move->x[3]);
     }
 
     for(uint8_t i = 0; i < BITBOARD_TOTAL; i++)
     {
-        if(BITBOARD_HAS_PIECE(boards[i], (*input_move).x[0], (*input_move).x[1]))
+        if(BITBOARD_HAS_PIECE(boards[i], input_move->x[0], input_move->x[1]))
         {
-            BITBOARD_UNSET_BIT(boards[i], (*input_move).x[0], (*input_move).x[1]);
-            BITBOARD_SET_BIT(boards[i], (*input_move).x[2], (*input_move).x[3]);
+            BITBOARD_UNSET_BIT(boards[i], input_move->x[0], input_move->x[1]);
+            BITBOARD_SET_BIT(boards[i], input_move->x[2], input_move->x[3]);
+        }
+    }
+}
+
+
+void move_undo(move_t *input_move) /* TODO: Optimize */
+{
+    for(uint8_t i = 0; i < BITBOARD_TOTAL; i++)
+    {
+        if(BITBOARD_HAS_PIECE(boards[i], input_move->x[2], input_move->x[3]))
+        {
+            BITBOARD_UNSET_BIT(boards[i], input_move->x[2], input_move->x[3]);
+            BITBOARD_SET_BIT(boards[i], input_move->x[0], input_move->x[1]);
+        }
+    }
+
+    for(uint8_t i = 0; i < BITBOARD_TOTAL; i++)
+    {
+        if(input_move->cap_flags & (0x01 << i))
+        {
+            BITBOARD_SET_BIT(boards[i], input_move->x[2], input_move->x[3]);
         }
     }
 }

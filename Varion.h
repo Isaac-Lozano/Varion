@@ -20,11 +20,7 @@
 #define BITBOARD_TOTAL 6 /* Number of bitboards there are */
 
 #define MAX_MOVES 51
-#define MAX_DEPTH 20
-
-#define ANSI_ESCAPE_RED   "\x1b[32m"
-#define ANSI_ESCAPE_GREEN "\x1b[31m"
-#define ANSI_ESCAPE_WHITE "\x1b[37m"
+#define MAX_DEPTH 11
 
 
 /* Global Variables */
@@ -34,6 +30,10 @@ bitboard boards[BITBOARD_TOTAL];
 move_t legal_moves[MAX_DEPTH][MAX_MOVES];
 int legal_moves_length[MAX_DEPTH]; /* How many legal moves in each row */
 
+move_t rejection_moves[MAX_MOVES];
+uint8_t rejection_len;
+extern uint64_t node_count;
+
 
 
 /* Function Declarations */
@@ -42,7 +42,8 @@ void setup(void);
 void print_board(void);
 void get_move(void);
 unsigned char check_game_over(void);
-void make_move(void);
+int make_move(void);
 uint8_t get_enemy_legal_moves(move_t *move_arr);
+uint8_t get_machine_legal_moves(move_t *move_arr);
 
 #endif /* defined __VARION_H__ */

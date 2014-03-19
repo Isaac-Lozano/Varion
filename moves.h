@@ -29,5 +29,6 @@ typedef struct
 
 void move_print_arr(move_t *move_arr, uint8_t move_len);
 void move_perform(move_t *input_move);
+void move_undo(move_t *input_move);
 
 #endif /* defined __MOVES_H__ */
