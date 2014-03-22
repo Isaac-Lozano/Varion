@@ -48,12 +48,13 @@ void setup(void)
 {
     /* Every two hex corresponds to a row.*/
     /*                 ROW =   0 1 2 3 4 5 6 7    */
-    boards[PAWN_BOARD]     = 0x0000700000700000;
-    boards[KNIGHT_BOARD]   = 0x0000880000880000;
-    boards[L_ROOK_BOARD]   = 0x0800000000000008;
-    boards[R_ROOK_BOARD]   = 0x8000000000000080;
-    boards[KING_BOARD]     = 0x2000000000000020;
-    boards[ENEMY_BOARD]    = 0x0000000000F800A8;
+    boards[PAWN_BOARD]     = 0x00000E00000E0000;
+    boards[KNIGHT_BOARD]   = 0x0000110000110000;
+    boards[L_ROOK_BOARD]   = 0x1000000000000010;
+    boards[R_ROOK_BOARD]   = 0x0100000000000001;
+    boards[KING_BOARD]     = 0x0400000000000004;
+    boards[ENEMY_BOARD]    = 0x00000000001F0015;
+    boards[MACHINE_BOARD]  = 0x15001F0000000000;
 }
 
 
@@ -62,7 +63,7 @@ void setup(void)
 void get_move(void)
 {
     uint8_t move_len;
-    char move_str[5]; /* I will make sure that this does not overflow */
+    char move_str[4]; /* I will make sure that this does not overflow */
     move_t move_arr[MAX_MOVES], input_move;
 
     move_len = get_enemy_legal_moves(move_arr);
@@ -74,22 +75,23 @@ enter_command:
     {
         move_str[i] = fgetc(stdin);
     }
-    move_str[4] = '\0';
 
     int ch;
     while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
 
-    for(uint8_t i = 0; i < 4; i++) /* Check if the string is valid */
+    if(move_str[0] < '8' && move_str[0] >= '0' &&
+       move_str[1] < '8' && move_str[1] >= '0' &&
+       move_str[2] < '8' && move_str[2] >= '0' &&
+       move_str[3] < '8' && move_str[3] >= '0')
     {
-        if(move_str[i] < '8' && move_str[i] >= '0')
-        {
-            input_move.x[i] = move_str[i] - '0';
-        }
-        else
-        {
-            printf("Invalid move.\n");
-            goto enter_command;
-        }
+        input_move.from = BITBOARD_GET_INDEX(move_str[0] - '0', move_str[1] - '0');
+        input_move.to = BITBOARD_GET_INDEX(move_str[2] - '0', move_str[3] - '0');
+    }
+    else
+    {
+        printf("Invalid move.\n");
+        while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
+        goto enter_command;
     }
 
     for(uint8_t i = 0; i < move_len; i++) /* Check if the string is valid */
@@ -101,6 +103,7 @@ enter_command:
                 if(MOVE_EQUAL(input_move, rejection_moves[j]))
                 {
                     printf("I reject that move. Pick another one.\n");
+                    while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
                     goto enter_command;
                 }
             }
@@ -119,41 +122,59 @@ int make_move(void)
 {
     int best = INT_MIN, next_best = INT_MIN, depth = 0, score;
     uint8_t move_len;
-    move_t move_arr[MAX_MOVES], best_move, next_best_move;
+    move_t move_arr[MAX_MOVES], best_move, next_best_move = {44,44,0};
 
     rejection_len = 0;
     move_len = get_machine_legal_moves(move_arr);
 
+//    move_perform(move_arr);
+    printf("Moves for the machine ");
+    move_print_arr(move_arr, move_len);
+//    return 0;
     for(uint8_t i = 0; i < move_len; i++)
     {
         move_perform(&move_arr[i]);
         score = minimax_min(depth+1, best);
-        if(score > next_best)
+        if(score >= next_best)
         {
-            if(score > best)
+            if(score >= best)
             {
                 next_best = best;
-                best = score;
                 next_best_move = best_move;
+                best = score;
                 best_move = move_arr[i];
+    printf("My next_best_move (BEST) is [%d%d%d%d]\n", BITBOARD_GET_FILE(next_best_move.from),
+                                                          BITBOARD_GET_RANK(next_best_move.from),
+                                                          BITBOARD_GET_FILE(next_best_move.to),
+                                                          BITBOARD_GET_RANK(next_best_move.to));
             }
             else
             {
                 next_best = score;
                 next_best_move = move_arr[i];
+    printf("My next_best_move is [%d%d%d%d]\n", BITBOARD_GET_FILE(next_best_move.from),
+                                                          BITBOARD_GET_RANK(next_best_move.from),
+                                                          BITBOARD_GET_FILE(next_best_move.to),
+                                                          BITBOARD_GET_RANK(next_best_move.to));
             }
         }
         move_undo(&move_arr[i]);
     }
 
-    printf("My move is [%d%d%d%d], Do you Accept [Y/n] ", best_move.x[0], best_move.x[1], best_move.x[2], best_move.x[3]);
+    printf("My move is [%d%d%d%d], Do you Accept [Y/n] ", BITBOARD_GET_FILE(best_move.from),
+                                                          BITBOARD_GET_RANK(best_move.from),
+                                                          BITBOARD_GET_FILE(best_move.to),
+                                                          BITBOARD_GET_RANK(best_move.to));
 
     int ch = getc(stdin);
 
     if(ch == 'N' || ch == 'n')
     {
         move_perform(&next_best_move);
-        printf("My move is [%d%d%d%d], then.\n", next_best_move.x[0], next_best_move.x[1], next_best_move.x[2], next_best_move.x[3]);
+        printf("My move is [%d%d%d%d], then.\n", BITBOARD_GET_FILE(next_best_move.from),
+                                                 BITBOARD_GET_RANK(next_best_move.from),
+                                                 BITBOARD_GET_FILE(next_best_move.to),
+                                                 BITBOARD_GET_RANK(next_best_move.to));
         move_print_arr(rejection_moves, rejection_len);
         return best;
     }
@@ -173,63 +194,73 @@ unsigned char check_game_over(void)
 }
 
 
-/* Get the moves that the opponent can play */
+/* Get the moves that the opponent can play
+ * Returns length of array
+ * (HINT: Program as if you were the enemy fighting machine)
+ * whom:
+ * 1 = machine
+ * 0 = enemy
+ */
 uint8_t get_enemy_legal_moves(move_t *move_arr)
 {
     uint8_t counter = 0;
+
     bitboard full_board = boards[PAWN_BOARD] | boards[KNIGHT_BOARD] | boards[L_ROOK_BOARD] |
                           boards[R_ROOK_BOARD] | boards[KING_BOARD];
 
-    for(uint8_t y = 0; y < GAME_BOARD_HEIGHT; y++)
+    for(uint8_t i = 0; i < ENEMY_BOARD; i++) /* Iterates through each piece board */
     {
-        for(uint8_t x = 0; x < GAME_BOARD_WIDTH; x++)
+        bitboard copy = boards[i] & boards[ENEMY_BOARD], move_board = 0, lsb_board;
+        switch(i)
         {
-            if(BITBOARD_HAS_PIECE(boards[ENEMY_BOARD], x, y))
-            {
-               if(BITBOARD_HAS_PIECE(boards[PAWN_BOARD], x, y))
-               {
-                  if(y > 0 && x < 4 && BITBOARD_HAS_PIECE(full_board ^ boards[ENEMY_BOARD], x+1, y-1))
-                  {
-                      move_t new_move = {{x, y, x+1, y-1}};
-                      move_arr[counter++] = new_move;
-                  }
-                  if(y > 0 && x > 0 && BITBOARD_HAS_PIECE(full_board ^ boards[ENEMY_BOARD], x-1, y-1))
-                  {
-                      move_t new_move = {{x, y, x-1, y-1}};
-                      move_arr[counter++] = new_move;
-                  }
-                  if(y > 0 && !BITBOARD_HAS_PIECE(full_board, x, y-1))
-                  {
-                      move_t new_move = {{x, y, x, y-1}};
-                      move_arr[counter++] = new_move;
-                  }
-               }
-               else if(BITBOARD_HAS_PIECE(boards[KNIGHT_BOARD], x, y))
-               {
-                   if(y > 0 && x > 1 && !BITBOARD_HAS_PIECE(full_board & boards[ENEMY_BOARD], x-2, y-1))
-                   {
-                       move_t new_move = {{x, y, x-2, y-1}};
-                       move_arr[counter++] = new_move;
-                   }
-                   if(y > 1 && x > 0 && !BITBOARD_HAS_PIECE(full_board & boards[ENEMY_BOARD], x-1, y-2))
-                   {
-                       move_t new_move = {{x, y, x-1, y-2}};
-                       move_arr[counter++] = new_move;
-                   }
-                   if(y > 1 && x < 4 && !BITBOARD_HAS_PIECE(full_board & boards[ENEMY_BOARD], x+1, y-2))
-                   {
-                       move_t new_move = {{x, y, x+1, y-2}};
-                       move_arr[counter++] = new_move;
-                   }
-                   if(y > 0 && x < 3 && !BITBOARD_HAS_PIECE(full_board & boards[ENEMY_BOARD], x+2, y-1))
-                   {
-                       move_t new_move = {{x, y, x+2, y-1}};
-                       move_arr[counter++] = new_move;
-                   }
-               }
-            }
+            case PAWN_BOARD:
+                while(copy) /* 0 means we have iterated through all the pieces */
+                {
+                    uint8_t from;
+                    lsb_board = copy & (0 - copy); /* Gets first pawn piece */
+                    copy &= copy - 1; /* Removes the first pawn piece from copy */
+                    from = bitboard_magic_table[(lsb_board * BITBOARD_MAGIC) >> 58]; /* Get index of it */
+                    /* Put assembly function here */
+                    move_board |= (lsb_board << 7) & 0x0F0F0F0F0F0F0F0F; /* Upper left (With mask) */
+                    move_board |= (lsb_board << 9) & 0x1E1E1E1E1E1E1E1E; /* Upper right (With mask) */
+                    move_board &= boards[MACHINE_BOARD]; /* Only if pawn can attack */
+                    move_board |= (lsb_board << 8) & (~full_board); /* Can move forward if nobody there */
+
+                    while(move_board != 0) /* 0 means we have iterated through all the moves */
+                    {
+                        move_t new_move = {from, bitboard_magic_table[((move_board & (0 - move_board)) * BITBOARD_MAGIC) >> 58]};
+                        move_board &= move_board - 1;
+                        move_arr[counter++] = new_move; /* Makes new move */
+                    }
+                }
+                break;
+
+            case KNIGHT_BOARD:
+                while(copy) /* 0 means we have iterated through all the pieces */
+                {
+                    uint8_t from;
+                    lsb_board = copy & (0 - copy); /* Gets first pawn piece */
+                    copy &= copy - 1; /* Removes the first pawn piece from copy */
+                    from = bitboard_magic_table[(lsb_board * BITBOARD_MAGIC) >> 58]; /* Get index of it */
+                    /* Put assembly function here */
+                    move_board |= (lsb_board << 6) & 0x0707070707070707; /* ULL (With mask) */
+                    move_board |= (lsb_board << 15) & 0x0F0F0F0F0F0F0F0F; /* UUL (With mask) */
+                    move_board |= (lsb_board << 17) & 0x1E1E1E1E1E1E1E1E; /* UUR (With mask) */
+                    move_board |= (lsb_board << 10) & 0x1C1C1C1C1C1C1C1C; /* URR (With mask) */
+                    move_board &= ~boards[ENEMY_BOARD]; /* Only if empty or enemy */
+
+                    while(move_board != 0) /* 0 means we have iterated through all the moves */
+                    {
+                        move_t new_move = {from, bitboard_magic_table[((move_board & (0 - move_board)) * BITBOARD_MAGIC) >> 58]};
+                        move_board &= move_board - 1;
+                        move_arr[counter++] = new_move; /* Makes new move */
+                    }
+                }
+                break;
         }
+
     }
+
     return counter;
 }
 
@@ -238,59 +269,62 @@ uint8_t get_enemy_legal_moves(move_t *move_arr)
 uint8_t get_machine_legal_moves(move_t *move_arr)
 {
     uint8_t counter = 0;
+
     bitboard full_board = boards[PAWN_BOARD] | boards[KNIGHT_BOARD] | boards[L_ROOK_BOARD] |
                           boards[R_ROOK_BOARD] | boards[KING_BOARD];
-    bitboard machine_board = full_board ^ boards[ENEMY_BOARD];
 
-    for(uint8_t y = 0; y < GAME_BOARD_HEIGHT; y++)
+    for(uint8_t i = 0; i < ENEMY_BOARD; i++) /* Iterates through each piece board */
     {
-        for(uint8_t x = 0; x < GAME_BOARD_WIDTH; x++)
+        bitboard copy = boards[i] & boards[MACHINE_BOARD], move_board = 0, lsb_board;
+        switch(i)
         {
-            if(BITBOARD_HAS_PIECE(machine_board, x, y))
-            {
-               if(BITBOARD_HAS_PIECE(boards[PAWN_BOARD], x, y))
-               {
-                  if(y < 7 && x < 4 && BITBOARD_HAS_PIECE(boards[ENEMY_BOARD], x+1, y+1))
-                  {
-                      move_t new_move = {{x, y, x+1, y+1}};
-                      move_arr[counter++] = new_move;
-                  }
-                  if(y > 0 && x > 0 && BITBOARD_HAS_PIECE(boards[ENEMY_BOARD], x-1, y+1))
-                  {
-                      move_t new_move = {{x, y, x-1, y+1}};
-                      move_arr[counter++] = new_move;
-                  }
-                  if(y > 0 && !BITBOARD_HAS_PIECE(full_board, x, y+1))
-                  {
-                      move_t new_move = {{x, y, x, y+1}};
-                      move_arr[counter++] = new_move;
-                  }
-               }
-               else if(BITBOARD_HAS_PIECE(boards[KNIGHT_BOARD], x, y))
-               {
-                   if(y < 7 && x > 1 && !BITBOARD_HAS_PIECE(machine_board, x-2, y+1))
-                   {
-                       move_t new_move = {{x, y, x-2, y+1}};
-                       move_arr[counter++] = new_move;
-                   }
-                   if(y < 6 && x > 0 && !BITBOARD_HAS_PIECE(machine_board, x-1, y+2))
-                   {
-                       move_t new_move = {{x, y, x-1, y+2}};
-                       move_arr[counter++] = new_move;
-                   }
-                   if(y < 6 && x < 4 && !BITBOARD_HAS_PIECE(machine_board, x+1, y+2))
-                   {
-                       move_t new_move = {{x, y, x+1, y+2}};
-                       move_arr[counter++] = new_move;
-                   }
-                   if(y < 7 && x < 3 && !BITBOARD_HAS_PIECE(machine_board, x+2, y+1))
-                   {
-                       move_t new_move = {{x, y, x+2, y+1}};
-                       move_arr[counter++] = new_move;
-                   }
-               }
-            }
+            case PAWN_BOARD:
+                while(copy) /* 0 means we have iterated through all the pieces */
+                {
+                    uint8_t from;
+                    lsb_board = copy & (0 - copy); /* Gets first pawn piece */
+                    copy &= copy - 1; /* Removes the first pawn piece from copy */
+                    from = bitboard_magic_table[(lsb_board * BITBOARD_MAGIC) >> 58]; /* Get index of it */
+                    /* Put assembly function here */
+                    move_board |= (lsb_board >> 7) & 0x1E1E1E1E1E1E1E1E; /* Bottom right (With mask) */
+                    move_board |= (lsb_board >> 9) & 0x0F0F0F0F0F0F0F0F; /* Bottom left (With mask) */
+                    move_board &= boards[ENEMY_BOARD]; /* Only if pawn can attack */
+                    move_board |= (lsb_board >> 8) & (~full_board); /* Can move forward if nobody there */
+
+                    while(move_board != 0) /* 0 means we have iterated through all the moves */
+                    {
+                        move_t new_move = {from, bitboard_magic_table[((move_board & (0 - move_board)) * BITBOARD_MAGIC) >> 58]};
+                        move_board &= move_board - 1;
+                        move_arr[counter++] = new_move; /* Makes new move */
+                    }
+                }
+                break;
+
+            case KNIGHT_BOARD:
+                while(copy) /* 0 means we have iterated through all the pieces */
+                {
+                    uint8_t from;
+                    lsb_board = copy & (0 - copy); /* Gets first pawn piece */
+                    copy &= copy - 1; /* Removes the first pawn piece from copy */
+                    from = bitboard_magic_table[(lsb_board * BITBOARD_MAGIC) >> 58]; /* Get index of it */
+                    /* Put assembly function here */
+                    move_board |= (lsb_board >> 10) & 0x0707070707070707; /* DLL (With mask) */
+                    move_board |= (lsb_board >> 17) & 0x0F0F0F0F0F0F0F0F; /* DDL (With mask) */
+                    move_board |= (lsb_board >> 15) & 0x1E1E1E1E1E1E1E1E; /* DDR (With mask) */
+                    move_board |= (lsb_board >> 6) & 0x1C1C1C1C1C1C1C1C; /* DRR (With mask) */
+                    move_board &= ~boards[ENEMY_BOARD]; /* Only if empty or enemy */
+
+                    while(move_board != 0) /* 0 means we have iterated through all the moves */
+                    {
+                        move_t new_move = {from, bitboard_magic_table[((move_board & (0 - move_board)) * BITBOARD_MAGIC) >> 58]};
+                        move_board &= move_board - 1;
+                        move_arr[counter++] = new_move; /* Makes new move */
+                    }
+                }
+                break;
         }
+
     }
+
     return counter;
 }

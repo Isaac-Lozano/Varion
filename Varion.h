@@ -17,7 +17,8 @@
 #define R_ROOK_BOARD 3
 #define KING_BOARD 4
 #define ENEMY_BOARD 5
-#define BITBOARD_TOTAL 6 /* Number of bitboards there are */
+#define MACHINE_BOARD 6
+#define BITBOARD_TOTAL 7 /* Number of bitboards there are */
 
 #define MAX_MOVES 51
 #define MAX_DEPTH 11
@@ -33,7 +34,6 @@ int legal_moves_length[MAX_DEPTH]; /* How many legal moves in each row */
 move_t rejection_moves[MAX_MOVES];
 uint8_t rejection_len;
 extern uint64_t node_count;
-
 
 
 /* Function Declarations */
