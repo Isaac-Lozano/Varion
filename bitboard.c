@@ -24,7 +24,7 @@ void bitboard_print(void)
 
     for(int i = GAME_BOARD_HEIGHT - 1; i >= 0; i--)
     {
-        printf("\t%d", i);
+        printf("\t%d", i + 1);
 
         for(uint8_t j = 0; j < 8; j++)
         {
@@ -61,7 +61,7 @@ void bitboard_print(void)
         printf("\n");
     }
 
-    printf("\t  0  1  2  3  4\n\n\n");
+    printf("\t  A  B  C  D  E\n\n\n");
 }
 
 

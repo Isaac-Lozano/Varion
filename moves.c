@@ -9,8 +9,8 @@ void move_print_arr(move_t *move_arr, uint8_t move_len)
     printf("Found %d moves: ", move_len);
     for(uint8_t i = 0; i < move_len; i++)
     {
-        printf("%d%d%d%d ", BITBOARD_GET_FILE(move_arr[i].from), BITBOARD_GET_RANK(move_arr[i].from),
-                            BITBOARD_GET_FILE(move_arr[i].to), BITBOARD_GET_RANK(move_arr[i].to));
+        printf("%c%d%c%d ", BITBOARD_GET_FILE(move_arr[i].from) + 'A', BITBOARD_GET_RANK(move_arr[i].from) + 1,
+                            BITBOARD_GET_FILE(move_arr[i].to) + 'A', BITBOARD_GET_RANK(move_arr[i].to) + 1);
     }
     printf("\n");
 }

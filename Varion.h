@@ -21,7 +21,10 @@
 #define BITBOARD_TOTAL 7 /* Number of bitboards there are */
 
 #define MAX_MOVES 51
-#define MAX_DEPTH 11
+#define MAX_DEPTH 8
+
+#define SCORE_MAX 2000000
+#define SCORE_MIN -2000000
 
 
 /* Global Variables */
@@ -41,7 +44,7 @@ extern uint64_t node_count;
 void setup(void);
 void print_board(void);
 void get_move(void);
-unsigned char check_game_over(void);
+int check_game_over(void);
 int make_move(void);
 uint8_t get_enemy_legal_moves(move_t *move_arr);
 uint8_t get_machine_legal_moves(move_t *move_arr);
