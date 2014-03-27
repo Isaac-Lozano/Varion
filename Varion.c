@@ -11,17 +11,18 @@ uint8_t best_move_number = 100;
 
 int main(void)
 {
+    int input, ch;
     unsigned char game_over = 0;
 
     setup();
     bitboard_print();
 
     printf("Machine goes first? [Y/n] ");
-    int ch = getc(stdin);
+    input = getc(stdin);
 
-    //while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
+    while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
 
-    if(ch != 'N' && ch != 'n')
+    if(input  != 'N' && input != 'n')
     {
         goto ai_first;
     }
@@ -74,7 +75,7 @@ void setup(void)
 void get_move(void)
 {
     uint8_t move_len;
-    char move_str[4]; /* I will make sure that this does not overflow */
+    char move_str[5]; /* I will make sure that this does not overflow */
     move_t move_arr[MAX_MOVES], input_move;
 
     move_len = get_enemy_legal_moves(move_arr);
@@ -82,10 +83,8 @@ void get_move(void)
 
 enter_command:
     printf("Enter move: ");
-    for(uint8_t i = 0; i < 4; i++)
-    {
-        move_str[i] = fgetc(stdin);
-    }
+
+    fgets(move_str, 5, stdin);
 
     int ch;
     while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
@@ -101,7 +100,6 @@ enter_command:
     else
     {
         printf("Invalid move.\n");
-        while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
         goto enter_command;
     }
 
@@ -122,7 +120,6 @@ enter_command:
             if(best_move_number != 100 && MOVE_EQUAL(input_move, rejection_moves[best_move_number]))
             {
                 printf("I reject that move. Pick another one.\n");
-                while((ch = fgetc(stdin)) != '\n' && ch != EOF); /* Flush stdin */
                 goto enter_command;
             }
             move_perform(&input_move);
@@ -153,10 +150,10 @@ int make_move(void)
     for(uint8_t i = 0; i < move_len; i++)
     {
         move_perform(&move_arr[i]);
-        printf("Checking machine move [%d%d%d%d]\n|\\\n", BITBOARD_GET_FILE(move_arr[i].from),
-                        BITBOARD_GET_RANK(move_arr[i].from),
-                        BITBOARD_GET_FILE(move_arr[i].to),
-                        BITBOARD_GET_RANK(move_arr[i].to));
+//        printf("Checking machine move [%d%d%d%d]\n|\\\n", BITBOARD_GET_FILE(move_arr[i].from),
+//                        BITBOARD_GET_RANK(move_arr[i].from),
+//                        BITBOARD_GET_FILE(move_arr[i].to),
+//                        BITBOARD_GET_RANK(move_arr[i].to));
         score = minimax_min(depth+1, best, SCORE_MIN);
 //        printf("Rejection move for [%d%d%d%d] is [%d%d%d%d].\n", BITBOARD_GET_FILE(move_arr[i].from),
 //                        BITBOARD_GET_RANK(move_arr[i].from),
@@ -197,20 +194,29 @@ int make_move(void)
         move_undo(&move_arr[i]);
     }
 
-    printf("My move is [%c%d%c%d], Do you Accept [Y/n] ", BITBOARD_GET_FILE(best_move.from) + 'A',
+    printf("My move is [%c%d%c%d] (%c%d%c%d), Do you Accept [Y/n] ",
+            BITBOARD_GET_FILE(best_move.from) + 'A',
             BITBOARD_GET_RANK(best_move.from) + 1,
             BITBOARD_GET_FILE(best_move.to) + 'A',
-            BITBOARD_GET_RANK(best_move.to) + 1);
+            BITBOARD_GET_RANK(best_move.to) + 1,
+            4 - BITBOARD_GET_FILE(best_move.from) + 'A',
+            8 - BITBOARD_GET_RANK(best_move.from),
+            4 - BITBOARD_GET_FILE(best_move.to) + 'A',
+            8 - BITBOARD_GET_RANK(best_move.to));
     best_move_number = best_move_num;
 
     int ch = getc(stdin);
 
     if(ch == 'N' || ch == 'n')
     {
-        printf("My move is [%c%d%c%d], then.\n", BITBOARD_GET_FILE(next_best_move.from) + 'A',
+        printf("My move is [%c%d%c%d] (%c%d%c%d), then.\n", BITBOARD_GET_FILE(next_best_move.from) + 'A',
                                                  BITBOARD_GET_RANK(next_best_move.from) + 1,
                                                  BITBOARD_GET_FILE(next_best_move.to) + 'A',
-                                                 BITBOARD_GET_RANK(next_best_move.to) + 1);
+                                                 BITBOARD_GET_RANK(next_best_move.to) + 1,
+                                                 4 - BITBOARD_GET_FILE(next_best_move.from) + 'A',
+                                                 8 - BITBOARD_GET_RANK(next_best_move.from),
+                                                 4 - BITBOARD_GET_FILE(next_best_move.to) + 'A',
+                                                 8 - BITBOARD_GET_RANK(next_best_move.to));
         best_move_number = next_best_move_num;
         best_move = next_best_move;
     }

@@ -2,6 +2,7 @@
 #include "Varion.h"
 #include "moves.h"
 #include <limits.h>
+#include <stdio.h>
 
 unsigned char enemy_threatened = 0, machine_threatened = 0;
 
@@ -20,7 +21,7 @@ int minimax_min(uint8_t depth, int parent_best, int parent_second_best)
             best_move.from = 63;
             best_move.to = 63;
             rejection_moves[rejection_len++] = best_move;
-            printf("O1\n");
+//            printf("O1\n");
         }
         return game_over - depth;
     }
@@ -34,11 +35,11 @@ int minimax_min(uint8_t depth, int parent_best, int parent_second_best)
         move_perform(&move_arr[i]);
         score = minimax_max(depth+1, best, second_best);
 
-        if(depth == 1)
-        printf("| |Checking move [%d%d%d%d]; Score = %d\n", BITBOARD_GET_FILE(move_arr[i].from),
-                        BITBOARD_GET_RANK(move_arr[i].from),
-                        BITBOARD_GET_FILE(move_arr[i].to),
-                        BITBOARD_GET_RANK(move_arr[i].to), score);
+//        if(depth == 1)
+//        printf("| |Checking move [%d%d%d%d]; Score = %d\n", BITBOARD_GET_FILE(move_arr[i].from),
+//                        BITBOARD_GET_RANK(move_arr[i].from),
+//                        BITBOARD_GET_FILE(move_arr[i].to),
+//                        BITBOARD_GET_RANK(move_arr[i].to), score);
 
         if(score < second_best)
         {
@@ -49,7 +50,7 @@ int minimax_min(uint8_t depth, int parent_best, int parent_second_best)
                 if(depth == 1)
                 {
                     best_move = move_arr[i];
-                    printf("| |\\\n| | |Turns out that it was the best move.\n");
+//                    printf("| |\\\n| | |Turns out that it was the best move.\n");
                 }
             }
             second_best = score;
@@ -60,7 +61,7 @@ int minimax_min(uint8_t depth, int parent_best, int parent_second_best)
             if(depth == 1)
             {
                 rejection_moves[rejection_len++] = best_move;
-                printf("O2\n");
+//                printf("O2\n");
             }
             return second_best;
         }
@@ -71,7 +72,7 @@ int minimax_min(uint8_t depth, int parent_best, int parent_second_best)
     if(depth == 1)
     {
         rejection_moves[rejection_len++] = best_move;
-        printf("O3\n");
+//        printf("O3\n");
     }
     return second_best;
 }
@@ -140,5 +141,5 @@ inline int minimax_eval()
         enemy_count++;
     }
 
-    return machine_count + (8 - enemy_copy);
+    return machine_count - enemy_count;
 }
